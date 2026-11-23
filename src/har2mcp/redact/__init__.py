@@ -1,3 +1,18 @@
-"""Deterministic redaction of secrets, tokens, cookies, and auth headers."""
+"""Deterministic credential redaction for browser network exchanges."""
 
-__all__: list[str] = []
+from har2mcp.redact.engine import RedactionEngine, redact
+from har2mcp.redact.models import (
+    RedactionResult,
+    SecretCategory,
+    SecretLocation,
+    SecretMetadata,
+)
+
+__all__ = [
+    "RedactionEngine",
+    "RedactionResult",
+    "SecretCategory",
+    "SecretLocation",
+    "SecretMetadata",
+    "redact",
+]
