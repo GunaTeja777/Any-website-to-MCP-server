@@ -79,4 +79,4 @@ def test_generate_config_validation(tmp_path: Path) -> None:
 
     with pytest.raises(ValidationError):
         # frozen model should reject modification
-        config.allow_writes = True  # type: ignore[misc]
+        config.allow_writes = True

@@ -19,7 +19,10 @@ class GenerateConfig(BaseModel):
     out_dir: Path = Field(..., description="Target directory for generated MCP server.")
     allow_writes: bool = Field(
         default=False,
-        description="Whether to generate tools for state-mutating requests (POST, PUT, DELETE, PATCH).",
+        description=(
+            "Whether to generate tools for state-mutating requests "
+            "(POST, PUT, DELETE, PATCH)."
+        ),
     )
 
 
@@ -50,7 +53,10 @@ def cli() -> None:
     "--allow-writes",
     is_flag=True,
     default=False,
-    help="Allow generation of mutation tools (POST, PUT, DELETE, PATCH). Defaults to read-only (GET, HEAD).",
+    help=(
+        "Allow generation of mutation tools (POST, PUT, DELETE, PATCH). "
+        "Defaults to read-only (GET, HEAD)."
+    ),
 )
 def generate(har_file: Path, out_dir: Path, allow_writes: bool) -> None:
     """Generate a working MCP server from a HAR file."""
