@@ -1,0 +1,85 @@
+# {{ server_name }} MCP Server
+
+Standalone Model Context Protocol (MCP) server generated automatically by **HAR2MCP**.
+
+## Overview
+This server exposes {{ tools | length }} tools allowing AI assistants (Claude Desktop, Cursor, etc.) to securely interact with the internal API of **{{ server_name }}**.
+
+{% if allow_writes %}
+> **Notice**: Mutating write tools are enabled (`--allow-writes`).
+{% else %}
+> **Notice**: Read-only server (`GET`/`HEAD`). Mutating operations are omitted.
+{% endif %}
+
+---
+
+## Exposed Tools
+
+| Tool Name | Operation | Description |
+|-----------|-----------|-------------|
+{% for tool in tools %}
+| `{{ tool.name }}` | `{{ tool.operation_type }}` | {{ tool.description | replace("\n", " ") }} |
+{% endfor %}
+
+---
+
+## Detailed Tool Reference
+
+{% for tool in tools %}
+### `{{ tool.name }}`
+- **Operation**: `{{ tool.operation_type | upper }}` (HTTP `{{ tool.method }}`)
+- **Endpoint**: `{{ tool.endpoint_path }}`
+- **Description**: {{ tool.description }}
+{% if tool.parameters %}
+- **Parameters**:
+{% for p in tool.parameters %}
+  - `{{ p.name }}` (`{{ p.type_annotation }}`{% if p.required %}, required{% else %}, optional{% endif %}): {{ p.description }}
+{% endfor %}
+{% else %}
+- **Parameters**: None
+{% endif %}
+
+{% endfor %}
+
+---
+
+## Getting Started
+
+### 1. Install Dependencies
+```bash
+pip install -e .
+```
+
+### 2. Configure Credentials
+Copy `.env.example` to `.env` and configure your credentials:
+```bash
+cp .env.example .env
+```
+
+{% if auth_spec.credentials %}
+Required environment variables:
+{% for cred in auth_spec.credentials %}
+- `{{ cred.env_var_name }}`: {{ cred.description or cred.name }} (injected as {{ cred.location.value }})
+{% endfor %}
+{% endif %}
+
+### 3. Run Server
+```bash
+python server.py
+```
+
+### 4. Client Integration (Claude Desktop / Cursor)
+Add to your `claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "{{ project_name }}": {
+      "command": "python",
+      "args": ["server.py"],
+      "env": {
+        "API_BASE_URL": "{{ base_url }}"
+      }
+    }
+  }
+}
+```
