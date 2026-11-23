@@ -14,14 +14,14 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 import pytest
 
-from har2mcp.auth.detector import detect_auth
+from har2mcp.auth.detector import detect_auth_spec
 from har2mcp.auth.models import (
     AuthSpec,
     AuthType,
     CredentialLocation,
     CredentialRequirement,
 )
-from har2mcp.cluster.engine import cluster_endpoints
+from har2mcp.cluster.engine import cluster_entries
 from har2mcp.codegen.generator import ServerGenerator, generate_server_project
 from har2mcp.codegen.models import (
     RenderedParameter,
@@ -30,9 +30,9 @@ from har2mcp.codegen.models import (
 )
 from har2mcp.design.engine import deterministic_design_tools
 from har2mcp.design.models import ToolEndpointMapping, ToolParameter, ToolSpec
-from har2mcp.parser.filter import filter_traffic
+from har2mcp.parser.filter import filter_entries
 from har2mcp.parser.loader import load_har
-from har2mcp.redact.engine import redact_entries
+from har2mcp.redact.engine import redact
 from har2mcp.schema.inferrer import infer_schemas
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
@@ -303,21 +303,21 @@ async def test_codegen_from_fixture_har_end_to_end() -> None:
     """Generate server from fixture HAR, verify python -c 'import server', and query via MCP Client."""
     # 1. Parse and filter traffic
     entries = load_har(SECRETS_HAR_PATH)
-    filtered = filter_traffic(entries)
+    filtered = filter_entries(entries)
     assert len(filtered) > 0
 
     # 2. Redact secrets
     redact_result = redact_entries(filtered)
 
     # 3. Cluster endpoints
-    clusters = cluster_endpoints(redact_result.redacted_entries)
+    clusters = cluster_entries(redact_result.redacted_entries)
     assert len(clusters) > 0
 
     # 4. Infer schemas
     schemas = infer_schemas(clusters)
 
     # 5. Detect auth
-    auth_spec = detect_auth(redact_result.redacted_entries, redact_result.mapping)
+    auth_spec = detect_auth_spec(redact_result.redacted_entries, redact_result.mapping)
 
     # 6. Propose tools (deterministic design)
     design_spec = deterministic_design_tools(clusters, schemas)
