@@ -1,4 +1,4 @@
-"""Data models representing authentication specifications and credential requirements."""
+"""Data models for authentication specifications and credential requirements."""
 
 from __future__ import annotations
 
@@ -32,9 +32,15 @@ class CredentialRequirement(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     name: str = Field(..., description="Header, cookie, or query parameter name.")
-    location: CredentialLocation = Field(..., description="Where the credential is sent.")
-    env_var_name: str = Field(..., description="Environment variable name for supplying value.")
-    placeholder: str | None = Field(default=None, description="Redacted placeholder value.")
+    location: CredentialLocation = Field(
+        ..., description="Where the credential is sent."
+    )
+    env_var_name: str = Field(
+        ..., description="Environment variable name for supplying value."
+    )
+    placeholder: str | None = Field(
+        default=None, description="Redacted placeholder value."
+    )
     header_prefix: str | None = Field(
         default=None,
         description="Prefix to prepend to header value, e.g. 'Bearer '.",
@@ -50,7 +56,7 @@ class TokenProvenance(BaseModel):
     placeholder: str = Field(..., description="Placeholder identifier, e.g. <TOKEN_1>.")
     origin_endpoint: str | None = Field(
         default=None,
-        description="Endpoint that originally emitted the credential (e.g. POST /auth/login).",
+        description="Endpoint that emitted the credential (e.g. POST /auth/login).",
     )
     origin_type: str | None = Field(
         default=None,
@@ -75,7 +81,9 @@ class AuthSpec(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    primary_type: AuthType = Field(..., description="Primary detected authentication mechanism.")
+    primary_type: AuthType = Field(
+        ..., description="Primary detected authentication mechanism."
+    )
     credentials: list[CredentialRequirement] = Field(
         default_factory=list,
         description="Required credentials to be supplied via environment variables.",
@@ -86,7 +94,7 @@ class AuthSpec(BaseModel):
     )
     provenance: list[TokenProvenance] = Field(
         default_factory=list,
-        description="Token provenance traces matching origin responses to later requests.",
+        description="Token provenance traces matching origins to later requests.",
     )
     has_refresh_flow: bool = Field(
         default=False,
@@ -106,5 +114,5 @@ class AuthSpec(BaseModel):
     )
     env_var_template: dict[str, str] = Field(
         default_factory=dict,
-        description="Mapping of environment variable names to placeholder values for .env setup.",
+        description="Mapping of environment variable names to placeholder values.",
     )

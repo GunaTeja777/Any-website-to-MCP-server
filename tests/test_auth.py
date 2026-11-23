@@ -1,4 +1,4 @@
-"""Unit tests for the auth module: credential detection, token provenance, and AuthSpec."""
+"""Unit tests for the auth module: credential detection and token provenance."""
 
 from __future__ import annotations
 
@@ -56,7 +56,9 @@ def make_entry(
 
 def test_detect_bearer_token() -> None:
     """Test detecting Bearer token authentication via Authorization header."""
-    entry = make_entry("GET", "/v1/profile", req_headers=[("Authorization", "Bearer <TOKEN_1>")])
+    entry = make_entry(
+        "GET", "/v1/profile", req_headers=[("Authorization", "Bearer <TOKEN_1>")]
+    )
     spec = detect_auth_spec([entry])
 
     assert spec.primary_type == AuthType.BEARER_TOKEN

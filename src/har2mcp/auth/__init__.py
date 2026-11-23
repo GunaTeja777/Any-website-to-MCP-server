@@ -1,4 +1,4 @@
-"""Authentication pattern detection, credential specification, and provenance tracing."""
+"""Authentication pattern detection and provenance tracing."""
 
 from har2mcp.auth.detector import detect_auth_spec, trace_token_provenance
 from har2mcp.auth.models import (

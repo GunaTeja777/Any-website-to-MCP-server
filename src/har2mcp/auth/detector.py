@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
-from typing import Sequence
+from collections.abc import Sequence
 from urllib.parse import urlparse
 
 from har2mcp.auth.models import (
@@ -71,22 +71,30 @@ def trace_token_provenance(entries: Sequence[Entry]) -> list[TokenProvenance]:
     for entry in entries:
         sig = _get_endpoint_signature(entry)
         path_lower = urlparse(entry.request.url).path.lower()
-        is_login = any(k in path_lower for k in LOGIN_KEYWORDS)
-        is_refresh = any(k in path_lower for k in REFRESH_KEYWORDS) and not is_login
+        is_refresh = any(k in path_lower for k in REFRESH_KEYWORDS)
+        is_login = (
+            any(k in path_lower for k in ("login", "signin", "authenticate", "session"))
+            and not is_refresh
+        )
 
         # 1. Inspect response headers (e.g. Set-Cookie)
         for h in entry.response.headers:
             matches = PLACEHOLDER_REGEX.findall(h.value)
-            origin_type = "set_cookie" if h.name.lower() == "set-cookie" else "response_header"
+            origin_type = (
+                "set_cookie" if h.name.lower() == "set-cookie" else "response_header"
+            )
             for m in matches:
                 if m not in emitted_map:
                     emitted_map[m] = (sig, origin_type, is_login, is_refresh)
 
         # 2. Inspect response cookies list
         for c in entry.response.cookies:
-            if c.value.startswith("<") and c.value.endswith(">"):
-                if c.value not in emitted_map:
-                    emitted_map[c.value] = (sig, "set_cookie", is_login, is_refresh)
+            if (
+                c.value.startswith("<")
+                and c.value.endswith(">")
+                and c.value not in emitted_map
+            ):
+                emitted_map[c.value] = (sig, "set_cookie", is_login, is_refresh)
 
         # 3. Inspect response body text
         if entry.response.content.text:
@@ -105,12 +113,20 @@ def trace_token_provenance(entries: Sequence[Entry]) -> list[TokenProvenance]:
             req_placeholders.update(PLACEHOLDER_REGEX.findall(q.value))
 
         for p in req_placeholders:
-            if p in emitted_map and sig != emitted_map[p][0]:
-                if sig not in reused_map[p]:
-                    reused_map[p].append(sig)
+            if (
+                p in emitted_map
+                and sig != emitted_map[p][0]
+                and sig not in reused_map[p]
+            ):
+                reused_map[p].append(sig)
 
     provenances: list[TokenProvenance] = []
-    for placeholder, (origin_sig, origin_type, is_login, is_refresh) in emitted_map.items():
+    for placeholder, (
+        origin_sig,
+        origin_type,
+        is_login,
+        is_refresh,
+    ) in emitted_map.items():
         reused_endpoints = reused_map.get(placeholder, [])
         provenances.append(
             TokenProvenance(
@@ -246,10 +262,14 @@ def detect_auth_spec(entries: Sequence[Entry]) -> AuthSpec:
     env_template: dict[str, str] = {}
     for cred in credentials:
         prefix_str = f"{cred.header_prefix} " if cred.header_prefix else ""
-        env_template[cred.env_var_name] = f"{prefix_str}{cred.placeholder or '<YOUR_VALUE>'}"
+        env_template[cred.env_var_name] = (
+            f"{prefix_str}{cred.placeholder or '<YOUR_VALUE>'}"
+        )
 
     if csrf_cred:
-        env_template[csrf_cred.env_var_name] = csrf_cred.placeholder or "<YOUR_CSRF_TOKEN>"
+        env_template[csrf_cred.env_var_name] = (
+            csrf_cred.placeholder or "<YOUR_CSRF_TOKEN>"
+        )
 
     return AuthSpec(
         primary_type=primary_type,
