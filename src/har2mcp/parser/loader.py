@@ -26,7 +26,9 @@ def load_har(source: Path | str | dict[str, Any]) -> HARRoot:
     data: dict[str, Any]
     if isinstance(source, dict):
         data = source
-    elif isinstance(source, Path) or (isinstance(source, str) and Path(source).is_file()):
+    elif isinstance(source, Path) or (
+        isinstance(source, str) and Path(source).is_file()
+    ):
         content = Path(source).read_text(encoding="utf-8")
         data = json.loads(content)
     elif isinstance(source, str):

@@ -8,7 +8,7 @@ from collections import Counter
 from urllib.parse import urlparse
 
 from har2mcp.parser.blocklist import is_domain_blocked, load_blocklist
-from har2mcp.parser.models import Entry, Request, Response, ResponseContent
+from har2mcp.parser.models import Entry, Request, Response
 
 STATIC_EXTENSIONS: frozenset[str] = frozenset(
     {
@@ -106,7 +106,12 @@ def get_apex_domain(hostname: str) -> str:
     return hostname
 
 
-def is_static_asset(url: str, request: Request, response: Response, resource_type: str | None) -> bool:
+def is_static_asset(
+    url: str,
+    request: Request,
+    response: Response,
+    resource_type: str | None,
+) -> bool:
     """Determine whether request represents a static media, style, or script asset.
 
     Args:
@@ -126,12 +131,10 @@ def is_static_asset(url: str, request: Request, response: Response, resource_typ
         if parsed_path.endswith(ext):
             return True
 
-    res_content_type = (response.content.mime_type or response.get_header("content-type") or "").lower()
-    for prefix in STATIC_MIME_PREFIXES:
-        if res_content_type.startswith(prefix):
-            return True
-
-    return False
+    res_content_type = (
+        response.content.mime_type or response.get_header("content-type") or ""
+    ).lower()
+    return any(res_content_type.startswith(prefix) for prefix in STATIC_MIME_PREFIXES)
 
 
 def is_api_traffic(entry: Entry) -> bool:

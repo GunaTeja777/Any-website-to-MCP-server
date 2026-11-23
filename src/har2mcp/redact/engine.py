@@ -14,9 +14,6 @@ from har2mcp.parser.models import (
     PostData,
     PostDataParam,
     QueryParam,
-    Request,
-    Response,
-    ResponseContent,
 )
 from har2mcp.redact.models import (
     RedactionResult,
@@ -69,6 +66,29 @@ SENSITIVE_FIELD_REGEX: re.Pattern[str] = re.compile(
 )
 
 
+# Common values that are standard HTTP/API keywords, not secret credentials
+EXCLUDED_SECRET_VALUES: frozenset[str] = frozenset(
+    {
+        "bearer",
+        "basic",
+        "token",
+        "none",
+        "true",
+        "false",
+        "null",
+        "undefined",
+        "application/json",
+        "ok",
+        "success",
+        "get",
+        "post",
+        "put",
+        "delete",
+        "patch",
+    }
+)
+
+
 class RedactionEngine:
     """Stateful redaction processor ensuring placeholder stability across entries."""
 
@@ -105,6 +125,9 @@ class RedactionEngine:
         """
         trimmed = value.strip()
         if not trimmed:
+            return value
+
+        if trimmed.lower() in EXCLUDED_SECRET_VALUES or len(trimmed) < 2:
             return value
 
         if trimmed in self._secret_to_placeholder:
@@ -170,7 +193,7 @@ class RedactionEngine:
         return ";".join(new_pairs)
 
     def _redact_set_cookie_header_value(self, header_value: str) -> str:
-        """Sanitize Set-Cookie header while preserving directives (Path, HttpOnly, etc.)."""
+        """Sanitize Set-Cookie header preserving directives (Path, HttpOnly, etc.)."""
         parts = header_value.split(";")
         if not parts:
             return header_value
@@ -258,7 +281,7 @@ class RedactionEngine:
                             key_name=k,
                         )
                     new_qsl.append((k, v))
-                new_query = urlencode(new_qsl)
+                new_query = urlencode(new_qsl, safe="<>:")
                 new_url = urlunparse(parsed._replace(query=new_query))
             else:
                 new_url = url
@@ -299,6 +322,7 @@ class RedactionEngine:
 
     def _redact_embedded_jwts(self, text: str) -> str:
         """Find and replace any JWT-shaped strings in text."""
+
         def _replace_jwt(match: re.Match[str]) -> str:
             raw_jwt = match.group(0)
             return self.get_or_register(
@@ -337,7 +361,11 @@ class RedactionEngine:
 
         # Sort secrets by length descending to prevent sub-string collision
         sorted_secrets = sorted(
-            [s for s in self._secret_to_placeholder.keys() if len(s) >= 4],
+            [
+                s
+                for s in self._secret_to_placeholder
+                if len(s) >= 4 and s.lower() not in EXCLUDED_SECRET_VALUES
+            ],
             key=len,
             reverse=True,
         )

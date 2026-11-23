@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -35,7 +34,9 @@ class SecretMetadata(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    placeholder: str = Field(..., description="Stable placeholder string, e.g. <TOKEN_1>.")
+    placeholder: str = Field(
+        ..., description="Stable placeholder string, e.g. <TOKEN_1>."
+    )
     original_value: str = Field(..., description="Redacted original secret value.")
     category: SecretCategory = Field(..., description="Classification category.")
     location: SecretLocation = Field(..., description="Source location.")

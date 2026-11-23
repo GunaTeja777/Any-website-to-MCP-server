@@ -26,7 +26,9 @@ class Cookie(BaseModel):
     value: str = Field(..., description="Cookie value.")
     path: str | None = Field(default=None, description="Cookie path attribute.")
     domain: str | None = Field(default=None, description="Cookie domain attribute.")
-    expires: str | None = Field(default=None, description="Cookie expiration timestamp.")
+    expires: str | None = Field(
+        default=None, description="Cookie expiration timestamp."
+    )
     http_only: bool | None = Field(
         default=None,
         alias="httpOnly",
