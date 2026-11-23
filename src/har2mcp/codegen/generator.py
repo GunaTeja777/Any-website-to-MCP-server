@@ -157,13 +157,18 @@ class ServerGenerator:
 
         # Check if ruff executable is in path or python -m ruff works
         ruff_bin = shutil.which("ruff")
-        cmd = [ruff_bin or sys.executable, "format", str(server_py)]
-        if not ruff_bin:
-            cmd = [sys.executable, "-m", "ruff", "format", str(server_py)]
+        base_cmd = [ruff_bin] if ruff_bin else [sys.executable, "-m", "ruff"]
 
         try:
             subprocess.run(
-                cmd,
+                [*base_cmd, "check", "--fix", str(server_py)],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            subprocess.run(
+                [*base_cmd, "format", str(server_py)],
                 check=False,
                 capture_output=True,
                 text=True,

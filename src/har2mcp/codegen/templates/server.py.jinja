@@ -9,8 +9,8 @@ import asyncio
 import os
 from typing import Any
 
-from dotenv import load_dotenv
 import httpx
+from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 
 # Load local .env credentials if present
@@ -84,7 +84,7 @@ async def make_request_with_retry(
     max_retries: int = 3,
     initial_backoff: float = 0.5,
 ) -> Any:
-    """Execute HTTP request with exponential backoff on transient network and server errors."""
+    """Execute HTTP request with exponential backoff on transient errors."""
     url = f"{API_BASE_URL}{path}"
     headers = {
         "Accept": "application/json, text/plain, */*",
@@ -137,10 +137,16 @@ async def make_request_with_retry(
                 f"Failed to connect to {url} after {max_retries} retries: {exc}"
             ) from exc
         except httpx.HTTPStatusError as exc:
-            error_detail = exc.response.text[:500] if exc.response.text else "No response body"
-            raise RuntimeError(
-                f"HTTP {exc.response.status_code} calling {method} {url}: {error_detail}"
-            ) from exc
+            error_detail = (
+                exc.response.text[:200]
+                if exc.response.text
+                else "No response body"
+            )
+            msg = (
+                f"HTTP {exc.response.status_code} on {method} {url}: "
+                f"{error_detail}"
+            )
+            raise RuntimeError(msg) from exc
         except Exception as exc:
             raise RuntimeError(f"Unexpected error calling {method} {url}: {exc}") from exc
 

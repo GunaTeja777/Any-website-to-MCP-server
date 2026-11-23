@@ -90,8 +90,8 @@ class ServerProjectConfig(BaseModel):
 
 def sanitize_project_name(name: str) -> str:
     """Sanitize name to a valid PEP 508 / pyproject package name."""
-    s = re.sub(r"[^a-zA-Z0-9_-]", "-", name).strip("-").lower()
-    return re.sub(r"-+", "-", s) or "mcp-server"
+    s = re.sub(r"[^a-zA-Z0-9]+", "-", name).strip("-").lower()
+    return s or "mcp-server"
 
 
 def resolve_python_type(raw_type: str) -> str:

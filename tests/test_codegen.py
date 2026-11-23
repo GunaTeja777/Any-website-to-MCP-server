@@ -30,8 +30,7 @@ from har2mcp.codegen.models import (
 )
 from har2mcp.design.engine import deterministic_design_tools
 from har2mcp.design.models import ToolEndpointMapping, ToolParameter, ToolSpec
-from har2mcp.parser.filter import filter_entries
-from har2mcp.parser.loader import load_har
+from har2mcp.parser.loader import load_har, parse_har
 from har2mcp.redact.engine import redact
 from har2mcp.schema.inferrer import infer_schemas
 
@@ -302,22 +301,21 @@ def test_generated_server_passes_ruff() -> None:
 async def test_codegen_from_fixture_har_end_to_end() -> None:
     """Generate server from fixture HAR, verify python -c 'import server', and query via MCP Client."""
     # 1. Parse and filter traffic
-    entries = load_har(SECRETS_HAR_PATH)
-    filtered = filter_entries(entries)
+    filtered = parse_har(SECRETS_HAR_PATH)
     assert len(filtered) > 0
 
     # 2. Redact secrets
-    redact_result = redact_entries(filtered)
+    redact_result = redact(filtered)
 
     # 3. Cluster endpoints
-    clusters = cluster_entries(redact_result.redacted_entries)
+    clusters = cluster_entries(redact_result.entries)
     assert len(clusters) > 0
 
     # 4. Infer schemas
     schemas = infer_schemas(clusters)
 
     # 5. Detect auth
-    auth_spec = detect_auth_spec(redact_result.redacted_entries, redact_result.mapping)
+    auth_spec = detect_auth_spec(redact_result.entries)
 
     # 6. Propose tools (deterministic design)
     design_spec = deterministic_design_tools(clusters, schemas)
