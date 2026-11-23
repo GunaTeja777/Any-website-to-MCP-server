@@ -263,7 +263,7 @@ class BaseLLMClient(ABC):
                 time.sleep(backoff)
 
         raise RuntimeError(
-            f"LLM completion failed after {self.max_retries} attempts. Last error: {last_error}"
+            f"LLM completion failed after {self.max_retries} attempts: {last_error}"
         )
 
     def complete_json(
@@ -302,7 +302,7 @@ class FakeLLM(BaseLLMClient):
         model: str = "fake-model",
         cache_dir: Path | str | None = None,
     ) -> None:
-        """Initialize FakeLLM with predetermined response string or response sequence."""
+        """Initialize FakeLLM with predetermined response sequence."""
         super().__init__(
             model=model, cache_dir=cache_dir, max_retries=3, initial_backoff=0.01
         )
@@ -378,7 +378,7 @@ class OpenAILLMClient(BaseLLMClient):
         """Execute OpenAI chat completion HTTP request."""
         if not self.api_key:
             raise ValueError(
-                "OPENAI_API_KEY not configured. Set environment variable or pass api_key."
+                "OPENAI_API_KEY not configured. Set environment variable or pass key."
             )
 
         api_messages: list[dict[str, str]] = []

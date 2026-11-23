@@ -3,17 +3,15 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from har2mcp.cluster.models import EndpointCluster, ObservedQueryParams
 from har2mcp.design import (
-    DesignSpec,
     ToolDesigner,
     ToolParameter,
     ToolSpec,
-    design_tools,
     deterministic_design_tools,
 )
 from har2mcp.llm import FakeLLM
@@ -150,7 +148,7 @@ def test_tool_designer_repair_loop_on_validation_failure() -> None:
 
 
 def test_tool_designer_exhausts_retries() -> None:
-    """Test that ToolDesigner raises ValueError when LLM consistently fails validation."""
+    """Test that ToolDesigner raises ValueError when LLM repeatedly fails."""
     bad_output = {"invalid_key": 123}
     llm = FakeLLM(responses=json.dumps(bad_output), cache_dir=None)
     designer = ToolDesigner(llm_client=llm, max_retries=2)

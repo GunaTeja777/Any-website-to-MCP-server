@@ -6,6 +6,7 @@ import json
 import logging
 import re
 from collections.abc import Sequence
+from typing import Literal
 
 from pydantic import ValidationError
 
@@ -92,7 +93,7 @@ def deterministic_design_tools(
         used_names.add(tool_name)
 
         is_write = cluster.method in {"POST", "PUT", "PATCH", "DELETE"}
-        op_type = "write" if is_write else "read"
+        op_type: Literal["read", "write"] = "write" if is_write else "read"
         description = (
             f"Execute {cluster.method} request on {cluster.path_template} "
             f"({'mutates state' if is_write else 'read-only'})."
@@ -266,9 +267,9 @@ class ToolDesigner:
                         )
                     )
                     reprompt = (
-                        f"Your output failed validation: {err}\n\n"
+                        f"Validation error:\n{err}\n\n"
                         "Please fix the errors and return strictly valid JSON conforming "
-                        "to DesignSpec (valid snake_case names, proper operation_type)."
+                        "to DesignSpec schema (valid snake_case names, operation_type)."
                     )
                     messages.append(LLMMessage(role=LLMRole.USER, content=reprompt))
 
