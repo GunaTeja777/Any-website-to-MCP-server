@@ -2,17 +2,15 @@
 
 from __future__ import annotations
 
-import asyncio
 import os
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
-from typing import Any
+from pathlib import Path
 
+import pytest
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
-import pytest
 
 from har2mcp.auth.detector import detect_auth_spec
 from har2mcp.auth.models import (
@@ -30,7 +28,7 @@ from har2mcp.codegen.models import (
 )
 from har2mcp.design.engine import deterministic_design_tools
 from har2mcp.design.models import ToolEndpointMapping, ToolParameter, ToolSpec
-from har2mcp.parser.loader import load_har, parse_har
+from har2mcp.parser.loader import parse_har
 from har2mcp.redact.engine import redact
 from har2mcp.schema.inferrer import infer_schemas
 
@@ -294,7 +292,9 @@ def test_generated_server_passes_ruff() -> None:
             text=True,
             check=False,
         )
-        assert result.returncode == 0, f"Ruff check failed: {result.stdout}\n{result.stderr}"
+        assert result.returncode == 0, (
+            f"Ruff check failed: {result.stdout}\n{result.stderr}"
+        )
 
 
 @pytest.mark.anyio

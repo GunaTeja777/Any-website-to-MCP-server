@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 from pydantic import BaseModel, ConfigDict, Field
 
 from har2mcp.auth.models import AuthSpec, AuthType
-from har2mcp.design.models import ToolParameter, ToolSpec
+from har2mcp.design.models import ToolSpec
 
 PYTHON_TYPE_MAP: dict[str, str] = {
     "string": "str",
@@ -34,10 +34,14 @@ class RenderedParameter(BaseModel):
 
     name: str = Field(..., description="Python variable name (snake_case).")
     api_name: str = Field(..., description="API parameter or field name.")
-    type_annotation: str = Field(..., description="Python type hint, e.g. 'str', 'int'.")
+    type_annotation: str = Field(
+        ..., description="Python type hint, e.g. 'str', 'int'."
+    )
     description: str = Field(..., description="Parameter description for docstring.")
     required: bool = Field(default=True, description="Whether parameter is required.")
-    default_value: Any | None = Field(default=None, description="Default value if optional.")
+    default_value: Any | None = Field(
+        default=None, description="Default value if optional."
+    )
     location: Literal["path", "query", "body"] = Field(
         default="query", description="Location in HTTP request."
     )
@@ -150,7 +154,7 @@ def build_rendered_tool(
     # Sort parameters so non-default parameters come first (vital for valid Python syntax)
     sorted_params = sorted(
         rendered_params,
-        key=lambda param: (not param.required or param.default_value is not None),
+        key=lambda param: not param.required or param.default_value is not None,
     )
 
     path_params = [p for p in rendered_params if p.location == "path"]
