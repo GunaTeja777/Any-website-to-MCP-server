@@ -48,7 +48,7 @@ class RenderedParameter(BaseModel):
 
     @property
     def python_signature(self) -> str:
-        """Render Python signature snippet (e.g. 'user_id: str' or 'limit: int = 10')."""
+        """Render signature snippet (e.g. 'user_id: str' or 'limit: int = 10')."""
         if self.required and self.default_value is None:
             return f"{self.name}: {self.type_annotation}"
         if self.default_value is not None:
