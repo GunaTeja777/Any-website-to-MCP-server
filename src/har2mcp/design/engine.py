@@ -267,9 +267,10 @@ class ToolDesigner:
                         )
                     )
                     reprompt = (
-                        f"Validation error:\n{err}\n\n"
-                        "Please fix the errors and return strictly valid JSON conforming "
-                        "to DesignSpec schema (valid snake_case names, operation_type)."
+                        f"Your output failed validation:\n{err}\n\n"
+                        "Please fix the errors and return strictly valid JSON "
+                        "conforming to DesignSpec schema "
+                        "(valid snake_case names, operation_type)."
                     )
                     messages.append(LLMMessage(role=LLMRole.USER, content=reprompt))
 
