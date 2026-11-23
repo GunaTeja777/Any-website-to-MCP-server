@@ -48,7 +48,7 @@ class RenderedParameter(BaseModel):
 
     @property
     def python_signature(self) -> str:
-        """Render Python signature snippet (e.g. 'user_id: str' or 'limit: int | None = 10')."""
+        """Render Python signature snippet (e.g. 'user_id: str' or 'limit: int = 10')."""
         if self.required and self.default_value is None:
             return f"{self.name}: {self.type_annotation}"
         if self.default_value is not None:
@@ -107,7 +107,7 @@ def resolve_python_type(raw_type: str) -> str:
 def build_rendered_tool(
     tool: ToolSpec,
 ) -> RenderedTool:
-    """Convert a ToolSpec into a RenderedTool with typed parameters and sorted signature."""
+    """Convert ToolSpec to RenderedTool with typed parameters and sorted signature."""
     endpoint_mapping = tool.endpoints[0] if tool.endpoints else None
     method = endpoint_mapping.method.upper() if endpoint_mapping else "GET"
     path_template = endpoint_mapping.path_template if endpoint_mapping else "/"
@@ -151,7 +151,7 @@ def build_rendered_tool(
             )
         )
 
-    # Sort parameters so non-default parameters come first (vital for valid Python syntax)
+    # Sort parameters so non-default args come first (vital for valid Python syntax)
     sorted_params = sorted(
         rendered_params,
         key=lambda param: not param.required or param.default_value is not None,

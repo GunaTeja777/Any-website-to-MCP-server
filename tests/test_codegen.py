@@ -299,7 +299,7 @@ def test_generated_server_passes_ruff() -> None:
 
 @pytest.mark.anyio
 async def test_codegen_from_fixture_har_end_to_end() -> None:
-    """Generate server from fixture HAR, verify python -c 'import server', and query via MCP Client."""
+    """Generate server from fixture HAR, import, and query via MCP Client."""
     # 1. Parse and filter traffic
     filtered = parse_har(SECRETS_HAR_PATH)
     assert len(filtered) > 0
@@ -354,15 +354,17 @@ async def test_codegen_from_fixture_har_end_to_end() -> None:
             env=env,
         )
 
-        async with stdio_client(params) as (read, write):
-            async with ClientSession(read, write) as session:
-                init_res = await session.initialize()
-                assert init_res.serverInfo.name == "cloud-app-server"
+        async with (
+            stdio_client(params) as (read, write),
+            ClientSession(read, write) as session,
+        ):
+            init_res = await session.initialize()
+            assert init_res.serverInfo.name == "cloud-app-server"
 
-                tools_res = await session.list_tools()
-                tool_names = [t.name for t in tools_res.tools]
-                assert len(tool_names) > 0
+            tools_res = await session.list_tools()
+            tool_names = [t.name for t in tools_res.tools]
+            assert len(tool_names) > 0
 
-                # In read-only mode, the login endpoint (POST /v1/auth/login) must not be present
-                for tool in tool_names:
-                    assert "login" not in tool.lower()
+            # In read-only mode, the login endpoint (POST) must not be present
+            for tool in tool_names:
+                assert "login" not in tool.lower()
