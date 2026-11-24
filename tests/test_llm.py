@@ -63,3 +63,21 @@ def test_disk_cache_hit_on_repeated_call(tmp_path: Path) -> None:
     assert resp2.content == '{"cached_data": 42}'
     # FakeLLM was not called a second time
     assert len(llm.calls) == 1
+
+
+def test_gemini_client_defaults(monkeypatch) -> None:
+    """Test GeminiLLMClient configuration and default base URL."""
+    from har2mcp.llm import GeminiLLMClient, get_default_llm_client
+
+    client = GeminiLLMClient(api_key="test-key")
+    assert client.api_key == "test-key"
+    assert "generativelanguage.googleapis.com" in client.base_url
+    assert client.model == "gemini-2.5-flash"
+
+    # Test get_default_llm_client with GEMINI_API_KEY
+    monkeypatch.setenv("GEMINI_API_KEY", "gemini-test-secret")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    default_client = get_default_llm_client()
+    assert isinstance(default_client, GeminiLLMClient)
+    assert default_client.api_key == "gemini-test-secret"
+
