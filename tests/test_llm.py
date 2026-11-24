@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from har2mcp.llm import FakeLLM, LLMMessage, LLMRole
 
 
@@ -65,7 +67,7 @@ def test_disk_cache_hit_on_repeated_call(tmp_path: Path) -> None:
     assert len(llm.calls) == 1
 
 
-def test_gemini_client_defaults(monkeypatch) -> None:
+def test_gemini_client_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test GeminiLLMClient configuration and default base URL."""
     from har2mcp.llm import GeminiLLMClient, get_default_llm_client
 
@@ -80,4 +82,3 @@ def test_gemini_client_defaults(monkeypatch) -> None:
     default_client = get_default_llm_client()
     assert isinstance(default_client, GeminiLLMClient)
     assert default_client.api_key == "gemini-test-secret"
-
