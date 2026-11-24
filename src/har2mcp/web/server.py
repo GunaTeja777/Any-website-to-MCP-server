@@ -36,8 +36,8 @@ def get_available_samples() -> list[dict[str, Any]]:
     cloud_path = (
         REPO_ROOT / "eval" / "cases" / "case_01_synthetic_cloud" / "recording.har"
     )
-    secrets_path = REPO_ROOT / "fixtures" / "synthetic_api_with_secrets.har"
-    mixed_path = REPO_ROOT / "fixtures" / "synthetic_mixed_traffic.har"
+    secrets_path = REPO_ROOT / "tests" / "fixtures" / "synthetic_api_with_secrets.har"
+    mixed_path = REPO_ROOT / "tests" / "fixtures" / "synthetic_mixed_traffic.har"
 
     return [
         {
