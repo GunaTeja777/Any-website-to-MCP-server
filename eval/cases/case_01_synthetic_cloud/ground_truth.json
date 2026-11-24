@@ -1,0 +1,22 @@
+{
+  "name": "case_01_synthetic_cloud",
+  "expected_auth": "bearer_token",
+  "description": "Synthetic cloud dashboard with user profile, login, and reports endpoints.",
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/v1/user/profile",
+      "fields": ["id", "name", "email", "active_session"]
+    },
+    {
+      "method": "POST",
+      "path": "/v1/auth/login",
+      "fields": ["username", "password", "client_secret", "token", "token_type"]
+    },
+    {
+      "method": "GET",
+      "path": "/v1/reports",
+      "fields": ["reports", "id", "status", "limit"]
+    }
+  ]
+}

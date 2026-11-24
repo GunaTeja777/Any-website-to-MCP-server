@@ -1,0 +1,36 @@
+{
+  "total_cases": 1,
+  "completed_cases": 1,
+  "failed_cases": 0,
+  "mean_endpoint_precision": 1.0,
+  "mean_endpoint_recall": 1.0,
+  "mean_endpoint_f1": 1.0,
+  "mean_schema_field_f1": 0.963,
+  "auth_accuracy_pct": 100.0,
+  "total_tools_passing_first_try": 2,
+  "total_tools_passing_after_repair": 2,
+  "total_tools_evaluated": 2,
+  "total_llm_cost": 0.0,
+  "total_time_seconds": 2.64,
+  "case_results": [
+    {
+      "case_name": "case_01_synthetic_cloud",
+      "endpoint_precision": 1.0,
+      "endpoint_recall": 1.0,
+      "endpoint_f1": 1.0,
+      "schema_field_precision": 0.9286,
+      "schema_field_recall": 1.0,
+      "schema_field_f1": 0.963,
+      "auth_detected_correctly": true,
+      "detected_auth_type": "bearer_token",
+      "expected_auth_type": "bearer_token",
+      "tools_passing_first_try": 2,
+      "tools_passing_after_repair": 2,
+      "total_tools": 2,
+      "total_llm_cost": 0.0,
+      "total_time_seconds": 2.64,
+      "error": null,
+      "details": {}
+    }
+  ]
+}

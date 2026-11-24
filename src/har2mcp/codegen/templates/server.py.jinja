@@ -96,12 +96,14 @@ async def make_request_with_retry(
     clean_params = {k: v for k, v in query_params.items() if v is not None}
 
     last_exc: Exception | None = None
+    trust_env = not ("127.0.0.1" in API_BASE_URL or "localhost" in API_BASE_URL)
     for attempt in range(max_retries + 1):
         try:
             async with httpx.AsyncClient(
                 timeout=30.0,
                 cookies=cookies,
                 follow_redirects=True,
+                trust_env=trust_env,
             ) as client:
                 response = await client.request(
                     method=method,

@@ -1,0 +1,16 @@
+{
+  "name": "case_03_placeholder",
+  "expected_auth": "TODO_EXPECTED_AUTH (e.g. bearer_token, cookie_session, api_key_header, none)",
+  "description": "PLACEHOLDER: Replace this file with your ground-truth endpoint definitions or openapi.json.",
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/v1/resource/{id}",
+      "fields": [
+        "id",
+        "name",
+        "status"
+      ]
+    }
+  ]
+}
