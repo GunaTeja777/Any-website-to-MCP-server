@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 import os
@@ -32,39 +33,38 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 def get_available_samples() -> list[dict[str, Any]]:
     """List preloaded demonstration HAR recordings."""
-    samples = [
+    cloud_path = (
+        REPO_ROOT / "eval" / "cases" / "case_01_synthetic_cloud" / "recording.har"
+    )
+    secrets_path = REPO_ROOT / "fixtures" / "synthetic_api_with_secrets.har"
+    mixed_path = REPO_ROOT / "fixtures" / "synthetic_mixed_traffic.har"
+
+    return [
         {
             "id": "synthetic_cloud",
             "name": "Cloud Infrastructure API",
-            "description": "Simulated multi-node compute cloud dashboard with metrics and quotas.",
-            "path": str(
-                REPO_ROOT
-                / "eval"
-                / "cases"
-                / "case_01_synthetic_cloud"
-                / "recording.har"
-            ),
+            "description": "Multi-node compute dashboard with metrics and quotas.",
+            "path": str(cloud_path),
             "auth_type": "Bearer Token",
             "icon": "cloud",
         },
         {
             "id": "synthetic_secrets",
             "name": "Authenticated Session with Sensitive Credentials",
-            "description": "Simulated web app with JWTs, CSRF tokens, session cookies, and API keys.",
-            "path": str(REPO_ROOT / "fixtures" / "synthetic_api_with_secrets.har"),
+            "description": "Web app with JWTs, CSRF tokens, cookies, and API keys.",
+            "path": str(secrets_path),
             "auth_type": "Session Cookie & CSRF",
             "icon": "shield",
         },
         {
             "id": "synthetic_mixed",
             "name": "E-Commerce App with Static Noise",
-            "description": "Real-world web traffic containing images, CSS, analytics, and JSON APIs.",
-            "path": str(REPO_ROOT / "fixtures" / "synthetic_mixed_traffic.har"),
+            "description": "Web traffic containing images, CSS, analytics, and JSON.",
+            "path": str(mixed_path),
             "auth_type": "API Key Query Param",
             "icon": "shopping-bag",
         },
     ]
-    return samples
 
 
 class StudioRequestHandler(BaseHTTPRequestHandler):
@@ -73,7 +73,9 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
     def _send_cors_headers(self) -> None:
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        self.send_header(
+            "Access-Control-Allow-Headers", "Content-Type, Authorization"
+        )
 
     def do_OPTIONS(self) -> None:  # noqa: N802
         self.send_response(HTTPStatus.NO_CONTENT)
@@ -112,11 +114,9 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
             return
 
         if url_path == "/api/health":
+            has_gemini = bool(os.environ.get("GEMINI_API_KEY"))
             data = json.dumps(
-                {
-                    "status": "ok",
-                    "gemini_enabled": bool(os.environ.get("GEMINI_API_KEY")),
-                }
+                {"status": "ok", "gemini_enabled": has_gemini}
             ).encode("utf-8")
             self.send_response(HTTPStatus.OK)
             self.send_header("Content-Type", "application/json")
@@ -129,7 +129,7 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
         self.send_error(HTTPStatus.NOT_FOUND, "Resource not found")
 
     def do_POST(self) -> None:  # noqa: N802
-        """Handle POST requests for MCP server generation and tool execution."""
+        """Handle POST requests for MCP server generation."""
         url_path = self.path.split("?")[0]
 
         content_length = int(self.headers.get("Content-Length", 0))
@@ -175,13 +175,14 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
                 return
         elif raw_har:
             try:
-                # Save raw HAR to temp file
-                tmp = tempfile.NamedTemporaryFile(
-                    delete=False, suffix=".har", mode="w", encoding="utf-8"
+                content_str = (
+                    raw_har if isinstance(raw_har, str) else json.dumps(raw_har)
                 )
-                tmp.write(raw_har if isinstance(raw_har, str) else json.dumps(raw_har))
-                tmp.close()
-                temp_har_path = Path(tmp.name)
+                with tempfile.NamedTemporaryFile(
+                    delete=False, suffix=".har", mode="w", encoding="utf-8"
+                ) as tmp:
+                    tmp.write(content_str)
+                    temp_har_path = Path(tmp.name)
                 har_path = temp_har_path
             except Exception as e:
                 self._send_json_error(
@@ -206,7 +207,10 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
                     "stage": "1. Parser & Noise Filter",
                     "status": "success",
                     "duration_ms": round((time.time() - t0) * 1000, 1),
-                    "summary": f"Retained {len(entries)} API-like requests; filtered non-API assets and tracking.",
+                    "summary": (
+                        f"Retained {len(entries)} API requests; "
+                        "filtered non-API assets and tracking."
+                    ),
                 }
             )
 
@@ -219,7 +223,10 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
                     "stage": "2. Zero-Secret Redactor",
                     "status": "success",
                     "duration_ms": round((time.time() - t0) * 1000, 1),
-                    "summary": f"Scrubbed {n_secrets} sensitive credentials; replaced with deterministic tokens.",
+                    "summary": (
+                        f"Scrubbed {n_secrets} sensitive credentials; "
+                        "replaced with deterministic tokens."
+                    ),
                 }
             )
 
@@ -231,7 +238,10 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
                     "stage": "3. Endpoint Clustering",
                     "status": "success",
                     "duration_ms": round((time.time() - t0) * 1000, 1),
-                    "summary": f"Identified {len(clusters)} distinct route templates with normalized path IDs.",
+                    "summary": (
+                        f"Identified {len(clusters)} distinct route templates "
+                        "with normalized path IDs."
+                    ),
                 }
             )
 
@@ -244,7 +254,10 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
                     "stage": "4. Schema Inferrer",
                     "status": "success",
                     "duration_ms": round((time.time() - t0) * 1000, 1),
-                    "summary": f"Synthesized JSON schemas for {len(schemas)} endpoints (pagination: {has_pagination}).",
+                    "summary": (
+                        f"Synthesized JSON schemas for {len(schemas)} endpoints "
+                        f"(pagination: {has_pagination})."
+                    ),
                 }
             )
 
@@ -261,7 +274,10 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
                     "stage": "5. Auth Provenance Detector",
                     "status": "success",
                     "duration_ms": round((time.time() - t0) * 1000, 1),
-                    "summary": f"Detected auth: '{auth_spec.primary_type.value}', injected via '{primary_env}'.",
+                    "summary": (
+                        f"Detected auth: '{auth_spec.primary_type.value}', "
+                        f"injected via '{primary_env}'."
+                    ),
                 }
             )
 
@@ -284,7 +300,8 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
                     design_spec = designer.design(clusters, schemas)
                 except Exception as llm_err:
                     logger.warning(
-                        "LLM design failed, falling back to deterministic: %s", llm_err
+                        "LLM design failed, falling back to deterministic: %s",
+                        llm_err,
                     )
                     design_spec = deterministic_design_tools(clusters, schemas)
                     designer_type = "Deterministic (Fallback)"
@@ -297,7 +314,10 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
                     "stage": f"6. Tool Designer ({designer_type})",
                     "status": "success",
                     "duration_ms": round((time.time() - t0) * 1000, 1),
-                    "summary": f"Designed {len(design_spec.tools)} tools for '{design_spec.server_name}'.",
+                    "summary": (
+                        f"Designed {len(design_spec.tools)} tools for "
+                        f"'{design_spec.server_name}'."
+                    ),
                 }
             )
 
@@ -318,7 +338,10 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
                         "stage": "7. FastMCP Codegen",
                         "status": "success",
                         "duration_ms": round((time.time() - t0) * 1000, 1),
-                        "summary": "Rendered complete package: server.py, pyproject.toml, Dockerfile, README.md.",
+                        "summary": (
+                            "Rendered complete package: server.py, "
+                            "pyproject.toml, Dockerfile, README.md."
+                        ),
                     }
                 )
 
@@ -336,12 +359,16 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
                     tool_specs=design_spec.tools,
                 )
                 report = asyncio.run(verifier.verify())
+                score_pct = report.score * 100
                 steps.append(
                     {
                         "stage": "8. Mock Replay & Verification",
                         "status": "success" if report.all_passed else "warning",
                         "duration_ms": round((time.time() - t0) * 1000, 1),
-                        "summary": f"Verified {report.passed_tools}/{report.total_tools} tools against local replay mock ({report.score * 100:.0f}% score).",
+                        "summary": (
+                            f"Verified {report.passed_tools}/{report.total_tools} "
+                            f"tools against mock ({score_pct:.0f}% score)."
+                        ),
                     }
                 )
 
@@ -414,10 +441,8 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
             )
         finally:
             if temp_har_path and temp_har_path.exists():
-                try:
+                with contextlib.suppress(Exception):
                     temp_har_path.unlink()
-                except Exception:
-                    pass
 
 
 def run_server(
@@ -427,19 +452,16 @@ def run_server(
     server_address = (host, port)
     httpd = ThreadingHTTPServer(server_address, StudioRequestHandler)
     url = f"http://{host}:{port}"
-    print(f"\n=======================================================")
+    engine = "Gemini 2.5 Flash" if os.environ.get("GEMINI_API_KEY") else "Deterministic"
+    print("\n=======================================================")
     print(f"  ✨ HAR2MCP Studio running at: {url}")
-    print(
-        f"  🤖 LLM Engine: {'Gemini 2.5 Flash' if os.environ.get('GEMINI_API_KEY') else 'Deterministic'}"
-    )
-    print(f"  Press Ctrl+C to stop the server.")
-    print(f"=======================================================\n")
+    print(f"  🤖 LLM Engine: {engine}")
+    print("  Press Ctrl+C to stop the server.")
+    print("=======================================================\n")
 
     if open_browser:
-        try:
+        with contextlib.suppress(Exception):
             webbrowser.open(url)
-        except Exception:
-            pass
 
     try:
         httpd.serve_forever()
