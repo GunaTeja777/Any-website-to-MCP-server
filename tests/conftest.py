@@ -51,3 +51,11 @@ def synthetic_edge_cases_path(fixtures_dir: Path) -> Path:
 def cli_runner() -> CliRunner:
     """Return a Click CliRunner instance for CLI testing."""
     return CliRunner()
+
+
+@pytest.fixture(autouse=True)
+def clean_llm_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ensure tests run offline and deterministically without external API calls."""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
