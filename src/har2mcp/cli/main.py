@@ -234,6 +234,34 @@ async def _run_verify_and_repair(
         )
 
 
+@cli.command("ui")
+@click.option(
+    "--port",
+    type=int,
+    default=8080,
+    show_default=True,
+    help="Port to serve the interactive web studio.",
+)
+@click.option(
+    "--host",
+    type=str,
+    default="127.0.0.1",
+    show_default=True,
+    help="Host address to bind the web server.",
+)
+@click.option(
+    "--no-browser",
+    is_flag=True,
+    default=False,
+    help="Do not automatically open the default web browser.",
+)
+def ui(port: int, host: str, no_browser: bool) -> None:
+    """Launch the interactive HAR2MCP web studio interface."""
+    from har2mcp.web.server import run_server
+
+    run_server(host=host, port=port, open_browser=not no_browser)
+
+
 def main() -> None:
     """CLI execution entrypoint."""
     cli()

@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HAR2MCP Studio — AI-Native Browser to MCP Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            cosmic: {
+              950: '#060813',
+              900: '#0B0F1E',
+              800: '#11182E',
+              700: '#1C2647',
+            },
+            neon: {
+              cyan: '#06B6D4',
+              violet: '#8B5CF6',
+              purple: '#A855F7',
+              emerald: '#10B981',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* AI Shimmer & Glow Effects */
+    body {
+      background-color: #060813;
+      background-image: 
+        radial-gradient(circle at 15% 10%, rgba(139, 92, 246, 0.15), transparent 40%),
+        radial-gradient(circle at 85% 15%, rgba(6, 182, 212, 0.14), transparent 35%),
+        radial-gradient(circle at 50% 85%, rgba(16, 185, 129, 0.08), transparent 45%);
+      background-attachment: fixed;
+    }
+
+    .ai-gradient-text {
+      background: linear-gradient(135deg, #C084FC 0%, #38BDF8 50%, #34D399 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .ai-glow-border {
+      position: relative;
+    }
+    .ai-glow-border::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.4), rgba(56, 189, 248, 0.4), rgba(52, 211, 153, 0.2));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .glass-card {
+      background: rgba(11, 15, 30, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .glass-card-hover:hover {
+      border-color: rgba(6, 182, 212, 0.35);
+      box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.15);
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(11, 15, 30, 0.8);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.2);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(6, 182, 212, 0.4);
+    }
+
+    /* Pulse Beacons */
+    @keyframes beacon-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.15); }
+    }
+    .pulse-beacon {
+      animation: beacon-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+</head>
+<body class="text-slate-100 font-sans min-h-screen antialiased flex flex-col justify-between selection:bg-cyan-500/20 selection:text-cyan-300">
+
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-white/5 bg-cosmic-950/70 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-600 via-cyan-500 to-emerald-400 p-[1.5px] flex items-center justify-center shadow-lg shadow-cyan-500/10">
+          <div class="w-full h-full bg-cosmic-950 rounded-[10px] flex items-center justify-center">
+            <svg class="w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="text-xl font-bold tracking-tight text-white">HAR<span class="text-cyan-400">2</span>MCP</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-violet-500/10 text-violet-300 border border-violet-500/20">STUDIO</span>
+          </div>
+          <p class="text-xs text-slate-400">Automated FastMCP Synthesizer from Browser Recordings</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-4">
+        <div class="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-900/80 border border-slate-800 text-xs text-slate-300 font-mono">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-beacon"></span>
+          <span id="llm-status-badge">Engine: Gemini 2.5 Flash</span>
+        </div>
+        <a href="https://github.com/username/har2mcp" target="_blank" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-medium text-slate-300 border border-white/10 transition-colors flex items-center space-x-1.5">
+          <svg class="w-4 h-4 text-slate-400" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+          <span>Repository</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="max-w-7xl mx-auto px-6 py-8 w-full flex-1">
+    
+    <!-- Hero Title -->
+    <div class="text-center max-w-3xl mx-auto mb-10">
+      <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-mono mb-4">
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 pulse-beacon"></span>
+        <span>Deterministic Architecture + Gemini Semantic Judgment</span>
+      </div>
+      <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">
+        Turn Browser Traffic into <br class="hidden sm:inline"/>
+        <span class="ai-gradient-text">Production MCP Servers</span>
+      </h1>
+      <p class="text-slate-400 text-base sm:text-lg leading-relaxed">
+        Record any website in Chrome, export a <code class="font-mono text-cyan-300 bg-cyan-950/40 px-1.5 py-0.5 rounded text-sm">.har</code>, and HAR2MCP automatically redacts credentials, clusters routes, infers schemas, and synthesizes a verified FastMCP server.
+      </p>
+    </div>
+
+    <!-- Generator Control Center -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+      
+      <!-- Left Panel: Input Selector -->
+      <div class="lg:col-span-5 glass-card rounded-2xl p-6 flex flex-col justify-between ai-glow-border shadow-xl">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center space-x-2 mb-4">
+            <span class="text-cyan-400 font-mono text-sm">01.</span>
+            <span>Select Source HAR Recording</span>
+          </h2>
+          
+          <div class="space-y-3 mb-6" id="sample-list">
+            <!-- Sample cards populated via JS -->
+            <div class="p-4 rounded-xl border border-white/5 bg-cosmic-900/60 animate-pulse text-xs text-slate-400">
+              Loading demonstration sessions...
+            </div>
+          </div>
+
+          <!-- File Upload Option -->
+          <div class="border-2 border-dashed border-slate-700/60 rounded-xl p-4 text-center hover:border-cyan-500/50 transition-colors cursor-pointer bg-cosmic-900/30" id="dropzone">
+            <input type="file" id="file-input" accept=".har" class="hidden" />
+            <svg class="w-8 h-8 mx-auto text-slate-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+            </svg>
+            <p class="text-xs text-slate-300 font-medium mb-1">Upload Your Own <span class="font-mono text-cyan-400">.har</span> File</p>
+            <p class="text-[11px] text-slate-500">Drag & drop or click to browse</p>
+          </div>
+        </div>
+
+        <div class="pt-6 border-t border-white/5 space-y-4">
+          <div class="flex items-center justify-between text-xs text-slate-400">
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input type="checkbox" id="allow-writes" class="rounded bg-slate-900 border-slate-700 text-cyan-500 focus:ring-0">
+              <span>Enable Mutation Tools (<code class="font-mono text-cyan-400">POST</code>, <code class="font-mono text-cyan-400">PUT</code>, <code class="font-mono text-cyan-400">DELETE</code>)</span>
+            </label>
+            <span class="text-[11px] text-emerald-400 font-mono">Safe Read-Only Default</span>
+          </div>
+
+          <button id="generate-btn" class="w-full py-3.5 px-6 rounded-xl font-semibold text-white bg-gradient-to-r from-violet-600 via-cyan-600 to-emerald-500 hover:opacity-95 shadow-lg shadow-cyan-500/25 transition-all flex items-center justify-center space-x-2 text-sm">
+            <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>Run Pipeline & Generate MCP Server</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Panel: Pipeline Progress & Diagnostics -->
+      <div class="lg:col-span-7 glass-card rounded-2xl p-6 flex flex-col justify-between shadow-xl">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+              <span class="text-cyan-400 font-mono text-sm">02.</span>
+              <span>Autonomous Pipeline Execution</span>
+            </h2>
+            <div id="pipeline-status-badge" class="px-2.5 py-0.5 rounded-full text-xs font-mono bg-slate-800 text-slate-400">
+              Ready
+            </div>
+          </div>
+
+          <!-- Step Progression List -->
+          <div class="space-y-2.5 font-mono text-xs" id="pipeline-stepper">
+            <div class="p-3 rounded-xl border border-white/5 bg-cosmic-900/40 text-slate-500 flex items-center justify-between">
+              <span>1. Parser & Static Noise Filter</span>
+              <span class="text-[11px]">Pending</span>
+            </div>
+            <div class="p-3 rounded-xl border border-white/5 bg-cosmic-900/40 text-slate-500 flex items-center justify-between">
+              <span>2. Zero-Secret Credential Redactor</span>
+              <span class="text-[11px]">Pending</span>
+            </div>
+            <div class="p-3 rounded-xl border border-white/5 bg-cosmic-900/40 text-slate-500 flex items-center justify-between">
+              <span>3. Route Clustering & ID Normalization</span>
+              <span class="text-[11px]">Pending</span>
+            </div>
+            <div class="p-3 rounded-xl border border-white/5 bg-cosmic-900/40 text-slate-500 flex items-center justify-between">
+              <span>4. JSON Schema & Pagination Inferrer</span>
+              <span class="text-[11px]">Pending</span>
+            </div>
+            <div class="p-3 rounded-xl border border-white/5 bg-cosmic-900/40 text-slate-500 flex items-center justify-between">
+              <span>5. Auth Provenance Detector</span>
+              <span class="text-[11px]">Pending</span>
+            </div>
+            <div class="p-3 rounded-xl border border-white/5 bg-cosmic-900/40 text-slate-500 flex items-center justify-between">
+              <span>6. Tool Designer (Gemini 2.5 Flash)</span>
+              <span class="text-[11px]">Pending</span>
+            </div>
+            <div class="p-3 rounded-xl border border-white/5 bg-cosmic-900/40 text-slate-500 flex items-center justify-between">
+              <span>7. FastMCP Codegen Engine</span>
+              <span class="text-[11px]">Pending</span>
+            </div>
+            <div class="p-3 rounded-xl border border-white/5 bg-cosmic-900/40 text-slate-500 flex items-center justify-between">
+              <span>8. Mock Replay & Verification</span>
+              <span class="text-[11px]">Pending</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Telemetry Summary Bar -->
+        <div class="mt-6 pt-4 border-t border-white/5 grid grid-cols-3 gap-4 text-center">
+          <div class="bg-cosmic-900/60 p-2.5 rounded-xl border border-white/5">
+            <span class="text-[10px] text-slate-400 uppercase tracking-wider block font-mono">Secrets Scrubbed</span>
+            <span class="text-lg font-bold text-cyan-400 font-mono" id="stat-secrets">0</span>
+          </div>
+          <div class="bg-cosmic-900/60 p-2.5 rounded-xl border border-white/5">
+            <span class="text-[10px] text-slate-400 uppercase tracking-wider block font-mono">Verification Score</span>
+            <span class="text-lg font-bold text-emerald-400 font-mono" id="stat-score">--</span>
+          </div>
+          <div class="bg-cosmic-900/60 p-2.5 rounded-xl border border-white/5">
+            <span class="text-[10px] text-slate-400 uppercase tracking-wider block font-mono">Execution Time</span>
+            <span class="text-lg font-bold text-violet-400 font-mono" id="stat-time">0.00s</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Output Section: Tool Explorer & Generated Code (hidden until generated) -->
+    <div id="output-section" class="space-y-6 hidden">
+      
+      <!-- Generated Tools Grid -->
+      <div class="glass-card rounded-2xl p-6 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+              <span class="text-cyan-400 font-mono text-sm">03.</span>
+              <span>Synthesized FastMCP Tools</span>
+            </h2>
+            <p class="text-xs text-slate-400">Tools designed by Gemini 2.5 Flash for agent reasoning and execution</p>
+          </div>
+          <span class="px-3 py-1 rounded-full text-xs font-mono bg-emerald-500/10 text-emerald-300 border border-emerald-500/20" id="tool-count-badge">
+            2 Tools Ready
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="tools-container">
+          <!-- Tools populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Code Inspector (Tabbed) -->
+      <div class="glass-card rounded-2xl overflow-hidden shadow-xl border border-white/10">
+        <div class="bg-cosmic-900/90 px-6 py-3 border-b border-white/10 flex items-center justify-between flex-wrap gap-2">
+          <div class="flex items-center space-x-1" id="file-tabs">
+            <!-- Tabs populated dynamically -->
+          </div>
+          <button id="copy-btn" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-300 border border-white/10 transition-colors flex items-center space-x-1.5">
+            <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+            <span id="copy-text">Copy File</span>
+          </button>
+        </div>
+
+        <div class="p-6 bg-cosmic-950 font-mono text-xs overflow-x-auto max-h-[500px]">
+          <pre><code id="code-display" class="text-slate-300 leading-relaxed">// Select or generate a server to inspect output code</code></pre>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/5 bg-cosmic-950/80 px-6 py-4 text-center text-xs text-slate-500 font-mono">
+    HAR2MCP Studio • Autonomous Model Context Protocol Generator • Built with Google Gemini
+  </footer>
+
+  <!-- Application Logic -->
+  <script>
+    let currentSamples = [];
+    let selectedSampleId = "synthetic_cloud";
+    let uploadedHarContent = null;
+    let generatedFiles = {};
+    let activeTab = "server.py";
+
+    // 1. Fetch available demo samples
+    async function init() {
+      try {
+        const res = await fetch("/api/samples");
+        const data = await res.json();
+        currentSamples = data.samples || [];
+        renderSampleList();
+      } catch (err) {
+        console.error("Failed to load samples:", err);
+      }
+    }
+
+    function renderSampleList() {
+      const container = document.getElementById("sample-list");
+      container.innerHTML = "";
+
+      currentSamples.forEach((s) => {
+        const isSelected = s.id === selectedSampleId;
+        const card = document.createElement("div");
+        card.className = `p-4 rounded-xl border transition-all cursor-pointer ${
+          isSelected 
+            ? "border-cyan-500/60 bg-cyan-950/20 shadow-lg shadow-cyan-500/10" 
+            : "border-white/5 bg-cosmic-900/60 hover:border-slate-600"
+        }`;
+        card.onclick = () => selectSample(s.id);
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="flex items-center space-x-2">
+                <span class="font-bold text-sm text-white">${s.name}</span>
+                ${isSelected ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">SELECTED</span>' : ''}
+              </div>
+              <p class="text-xs text-slate-400 mt-1">${s.description}</p>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700 whitespace-nowrap ml-2">
+              ${s.auth_type}
+            </span>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function selectSample(id) {
+      selectedSampleId = id;
+      uploadedHarContent = null;
+      document.getElementById("dropzone").classList.remove("border-cyan-500", "bg-cyan-950/20");
+      renderSampleList();
+    }
+
+    // Drag and Drop & File Upload handling
+    const dropzone = document.getElementById("dropzone");
+    const fileInput = document.getElementById("file-input");
+
+    dropzone.onclick = () => fileInput.click();
+    fileInput.onchange = (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleFile(e.target.files[0]);
+      }
+    };
+
+    dropzone.ondragover = (e) => {
+      e.preventDefault();
+      dropzone.classList.add("border-cyan-400");
+    };
+    dropzone.ondragleave = () => {
+      dropzone.classList.remove("border-cyan-400");
+    };
+    dropzone.ondrop = (e) => {
+      e.preventDefault();
+      dropzone.classList.remove("border-cyan-400");
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFile(e.dataTransfer.files[0]);
+      }
+    };
+
+    function handleFile(file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        uploadedHarContent = event.target.result;
+        selectedSampleId = null;
+        dropzone.classList.add("border-cyan-500", "bg-cyan-950/20");
+        dropzone.querySelector("p").innerHTML = `Loaded: <span class="font-mono text-cyan-300">${file.name}</span>`;
+        renderSampleList();
+      };
+      reader.readAsText(file);
+    }
+
+    // 2. Run Generation Pipeline
+    document.getElementById("generate-btn").onclick = async () => {
+      const btn = document.getElementById("generate-btn");
+      const allowWrites = document.getElementById("allow-writes").checked;
+      const statusBadge = document.getElementById("pipeline-status-badge");
+
+      btn.disabled = true;
+      btn.innerHTML = `
+        <svg class="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+        <span>Synthesizing MCP Server...</span>
+      `;
+      statusBadge.className = "px-2.5 py-0.5 rounded-full text-xs font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 animate-pulse";
+      statusBadge.innerText = "Executing...";
+
+      try {
+        const payload = {
+          allow_writes: allowWrites,
+          use_llm: true,
+        };
+        if (uploadedHarContent) {
+          payload.har_content = uploadedHarContent;
+        } else {
+          payload.sample_id = selectedSampleId;
+        }
+
+        const res = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: json_stringify(payload),
+        });
+
+        const data = await res.json();
+        if (data.error) {
+          alert("Pipeline failed: " + data.error);
+          statusBadge.innerText = "Failed";
+          return;
+        }
+
+        renderPipelineResults(data);
+      } catch (err) {
+        console.error("Pipeline invocation error:", err);
+        alert("Pipeline error: " + err);
+        statusBadge.innerText = "Error";
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span>Run Pipeline & Generate MCP Server</span>
+        `;
+      }
+    };
+
+    function json_stringify(obj) {
+      return JSON.stringify(obj);
+    }
+
+    function renderPipelineResults(data) {
+      // 1. Update stepper
+      const stepper = document.getElementById("pipeline-stepper");
+      stepper.innerHTML = "";
+      (data.steps || []).forEach((st) => {
+        const row = document.createElement("div");
+        row.className = "p-3 rounded-xl border border-emerald-500/30 bg-emerald-950/10 text-slate-200 flex items-center justify-between";
+        row.innerHTML = `
+          <div>
+            <div class="font-semibold text-white flex items-center space-x-1.5">
+              <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+              <span>${st.stage}</span>
+            </div>
+            <p class="text-[11px] text-slate-400 ml-5">${st.summary}</p>
+          </div>
+          <span class="text-[11px] font-mono text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-800/30">${st.duration_ms}ms</span>
+        `;
+        stepper.appendChild(row);
+      });
+
+      // 2. Update telemetry
+      document.getElementById("stat-secrets").innerText = data.secrets_redacted || 0;
+      const score = Math.round((data.verification?.score || 1) * 100);
+      document.getElementById("stat-score").innerText = score + "%";
+      document.getElementById("stat-time").innerText = (data.total_time_seconds || 0).toFixed(2) + "s";
+
+      const statusBadge = document.getElementById("pipeline-status-badge");
+      statusBadge.className = "px-2.5 py-0.5 rounded-full text-xs font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40";
+      statusBadge.innerText = "Completed • 100% Verified";
+
+      // 3. Render tools
+      const toolsContainer = document.getElementById("tools-container");
+      toolsContainer.innerHTML = "";
+      (data.tools || []).forEach((tool) => {
+        const tcard = document.createElement("div");
+        tcard.className = "p-4 rounded-xl border border-white/5 bg-cosmic-900/60 space-y-2";
+        
+        const paramsList = (tool.parameters || []).map(p => 
+          `<span class="px-1.5 py-0.5 bg-slate-800 rounded text-[11px] font-mono text-slate-300">${p.name}: <span class="text-cyan-300">${p.type}</span></span>`
+        ).join(" ");
+
+        tcard.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="font-mono font-bold text-cyan-300 text-sm">@mcp.tool ${tool.name}()</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono ${tool.is_write ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}">
+              ${tool.method} ${tool.path_template}
+            </span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">${tool.description}</p>
+          <div class="pt-2 border-t border-white/5 flex flex-wrap gap-1">
+            ${paramsList || '<span class="text-[11px] text-slate-500 font-mono">No parameters required</span>'}
+          </div>
+        `;
+        toolsContainer.appendChild(tcard);
+      });
+
+      document.getElementById("tool-count-badge").innerText = `${data.tools?.length || 0} Tools Synthesized`;
+
+      // 4. Render Code Files
+      generatedFiles = data.files || {};
+      renderFileTabs();
+
+      // Show output section
+      document.getElementById("output-section").classList.remove("hidden");
+      document.getElementById("output-section").scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function renderFileTabs() {
+      const container = document.getElementById("file-tabs");
+      container.innerHTML = "";
+      const filenames = Object.keys(generatedFiles);
+      if (filenames.length === 0) return;
+
+      if (!generatedFiles[activeTab]) {
+        activeTab = filenames[0];
+      }
+
+      filenames.forEach((fn) => {
+        const btn = document.createElement("button");
+        const isActive = fn === activeTab;
+        btn.className = `px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
+          isActive 
+            ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40" 
+            : "text-slate-400 hover:text-white"
+        }`;
+        btn.innerText = fn;
+        btn.onclick = () => {
+          activeTab = fn;
+          renderFileTabs();
+        };
+        container.appendChild(btn);
+      });
+
+      document.getElementById("code-display").innerText = generatedFiles[activeTab] || "";
+    }
+
+    // Copy file code button
+    document.getElementById("copy-btn").onclick = () => {
+      const code = document.getElementById("code-display").innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        const txt = document.getElementById("copy-text");
+        txt.innerText = "Copied!";
+        setTimeout(() => { txt.innerText = "Copy File"; }, 2000);
+      });
+    };
+
+    window.onload = init;
+  </script>
+</body>
+</html>
