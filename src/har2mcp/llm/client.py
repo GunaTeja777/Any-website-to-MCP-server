@@ -23,6 +23,8 @@ MODEL_PRICING: dict[str, tuple[float, float]] = {
     "gpt-4o": (5.00, 15.00),
     "gpt-4o-mini": (0.15, 0.60),
     "claude-3-5-sonnet": (3.00, 15.00),
+    "gemini-2.5-flash": (0.075, 0.30),
+    "gemini-2.0-flash": (0.075, 0.30),
     "gemini-1.5-pro": (3.50, 10.50),
     "gemini-1.5-flash": (0.075, 0.30),
     "default": (2.00, 6.00),
@@ -433,6 +435,47 @@ class OpenAILLMClient(BaseLLMClient):
             ),
             raw=data,
         )
+
+
+class GeminiLLMClient(OpenAILLMClient):
+    """Google Gemini client via official OpenAI-compatible endpoint."""
+
+    DEFAULT_BASE_URL: str = "https://generativelanguage.googleapis.com/v1beta/openai"
+
+    def __init__(
+        self,
+        api_key: str | None = None,
+        base_url: str = DEFAULT_BASE_URL,
+        model: str = "gemini-2.5-flash",
+        cache_dir: Path | str | None = None,
+    ) -> None:
+        """Initialize Gemini client with API key and model identifier."""
+        key = (
+            api_key
+            or os.environ.get("GEMINI_API_KEY")
+            or os.environ.get("GOOGLE_API_KEY")
+            or ""
+        )
+        super().__init__(
+            api_key=key,
+            base_url=base_url,
+            model=model,
+            cache_dir=cache_dir,
+        )
+
+
+def get_default_llm_client(cache_dir: Path | str | None = None) -> BaseLLMClient:
+    """Instantiate appropriate LLM client based on available environment variables."""
+    gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    openai_key = os.environ.get("OPENAI_API_KEY")
+
+    if gemini_key:
+        model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+        return GeminiLLMClient(api_key=gemini_key, model=model, cache_dir=cache_dir)
+    elif openai_key:
+        model = os.environ.get("OPENAI_MODEL", "gpt-4o")
+        return OpenAILLMClient(api_key=openai_key, model=model, cache_dir=cache_dir)
+    return NoOpLLMClient()
 
 
 class NoOpLLMClient(FakeLLM):

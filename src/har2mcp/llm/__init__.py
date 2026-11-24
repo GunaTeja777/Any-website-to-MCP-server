@@ -3,6 +3,7 @@
 from har2mcp.llm.client import (
     BaseLLMClient,
     FakeLLM,
+    GeminiLLMClient,
     LLMMessage,
     LLMRequest,
     LLMResponse,
@@ -10,11 +11,13 @@ from har2mcp.llm.client import (
     LLMUsage,
     NoOpLLMClient,
     OpenAILLMClient,
+    get_default_llm_client,
 )
 
 __all__ = [
     "BaseLLMClient",
     "FakeLLM",
+    "GeminiLLMClient",
     "LLMMessage",
     "LLMRequest",
     "LLMResponse",
@@ -22,4 +25,5 @@ __all__ = [
     "LLMUsage",
     "NoOpLLMClient",
     "OpenAILLMClient",
+    "get_default_llm_client",
 ]
