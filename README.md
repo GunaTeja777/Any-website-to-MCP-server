@@ -45,7 +45,22 @@ uv run har2mcp generate eval/cases/case_01_synthetic_cloud/recording.har \
   --verify
 ```
 
-### 3. Run and Connect to Claude Desktop
+### 3. Interactive Web Studio UI
+
+HAR2MCP includes an AI-styled web interface for interactive demonstrations and visual pipeline execution:
+
+```bash
+uv run har2mcp ui
+# Or: make ui
+```
+
+Opens `http://localhost:8080` in your browser, featuring:
+- **Live 8-Stage Pipeline Stepper**: Real-time visual progress from noise filtering to Gemini tool design and mock verification.
+- **Pre-Loaded Demonstrations**: One-click demo sessions (Cloud Infrastructure, Authenticated Sessions, Mixed Traffic) or drag-and-drop custom `.har` uploads.
+- **Code Explorer**: Interactive tabbed viewer for `server.py`, `pyproject.toml`, `.env.example`, `Dockerfile`, and `README.md`.
+- **Tool Inspection**: Live inspection of synthesized `@mcp.tool` signatures, argument types, and docstrings.
+
+### 4. Run and Connect to Claude Desktop
 
 Inspect your generated project in `./my_cloud_server`:
 
