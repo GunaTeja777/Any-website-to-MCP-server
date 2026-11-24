@@ -155,9 +155,13 @@ def generate(
     click.echo(f"  [5/6] Detected auth type: {auth_spec.primary_type.value}")
 
     # 6. Tool Design
-    openai_key = os.environ.get("OPENAI_API_KEY")
-    if openai_key:
-        llm = OpenAILLMClient(api_key=openai_key)
+    has_llm = bool(
+        os.environ.get("GEMINI_API_KEY")
+        or os.environ.get("GOOGLE_API_KEY")
+        or os.environ.get("OPENAI_API_KEY")
+    )
+    if has_llm:
+        llm = get_default_llm_client()
         designer = ToolDesigner(llm_client=llm)
         design_spec = designer.design(clusters, schemas)
     else:
@@ -215,10 +219,7 @@ async def _run_verify_and_repair(
 
     if not report.all_passed and config.repair:
         click.echo("\n--- Initiating Self-Repair Loop (max 3 iterations) ---")
-        openai_key = os.environ.get("OPENAI_API_KEY")
-        llm_client = (
-            OpenAILLMClient(api_key=openai_key) if openai_key else NoOpLLMClient()
-        )
+        llm_client = get_default_llm_client()
 
         repair_loop = RepairLoop(
             server_dir=config.out_dir,
