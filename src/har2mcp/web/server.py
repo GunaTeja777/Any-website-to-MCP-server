@@ -19,7 +19,7 @@ from har2mcp.cluster.engine import cluster_entries
 from har2mcp.codegen.generator import generate_server_project
 from har2mcp.design.engine import ToolDesigner, deterministic_design_tools
 from har2mcp.llm.client import get_default_llm_client
-from har2mcp.parser.loader import load_har, parse_har
+from har2mcp.parser.loader import parse_har
 from har2mcp.redact.engine import redact
 from har2mcp.schema.inferrer import infer_schemas
 from har2mcp.verify.verifier import ServerVerifier
@@ -38,7 +38,11 @@ def get_available_samples() -> list[dict[str, Any]]:
             "name": "Cloud Infrastructure API",
             "description": "Simulated multi-node compute cloud dashboard with metrics and quotas.",
             "path": str(
-                REPO_ROOT / "eval" / "cases" / "case_01_synthetic_cloud" / "recording.har"
+                REPO_ROOT
+                / "eval"
+                / "cases"
+                / "case_01_synthetic_cloud"
+                / "recording.har"
             ),
             "auth_type": "Bearer Token",
             "icon": "cloud",
@@ -47,9 +51,7 @@ def get_available_samples() -> list[dict[str, Any]]:
             "id": "synthetic_secrets",
             "name": "Authenticated Session with Sensitive Credentials",
             "description": "Simulated web app with JWTs, CSRF tokens, session cookies, and API keys.",
-            "path": str(
-                REPO_ROOT / "fixtures" / "synthetic_api_with_secrets.har"
-            ),
+            "path": str(REPO_ROOT / "fixtures" / "synthetic_api_with_secrets.har"),
             "auth_type": "Session Cookie & CSRF",
             "icon": "shield",
         },
@@ -57,9 +59,7 @@ def get_available_samples() -> list[dict[str, Any]]:
             "id": "synthetic_mixed",
             "name": "E-Commerce App with Static Noise",
             "description": "Real-world web traffic containing images, CSS, analytics, and JSON APIs.",
-            "path": str(
-                REPO_ROOT / "fixtures" / "synthetic_mixed_traffic.har"
-            ),
+            "path": str(REPO_ROOT / "fixtures" / "synthetic_mixed_traffic.har"),
             "auth_type": "API Key Query Param",
             "icon": "shopping-bag",
         },
@@ -73,9 +73,7 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
     def _send_cors_headers(self) -> None:
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header(
-            "Access-Control-Allow-Headers", "Content-Type, Authorization"
-        )
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
     def do_OPTIONS(self) -> None:  # noqa: N802
         self.send_response(HTTPStatus.NO_CONTENT)
@@ -115,7 +113,10 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
 
         if url_path == "/api/health":
             data = json.dumps(
-                {"status": "ok", "gemini_enabled": bool(os.environ.get("GEMINI_API_KEY"))}
+                {
+                    "status": "ok",
+                    "gemini_enabled": bool(os.environ.get("GEMINI_API_KEY")),
+                }
             ).encode("utf-8")
             self.send_response(HTTPStatus.OK)
             self.send_header("Content-Type", "application/json")
@@ -168,7 +169,9 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
             available = {s["id"]: Path(s["path"]) for s in get_available_samples()}
             har_path = available.get(sample_id)
             if not har_path or not har_path.exists():
-                self._send_json_error(HTTPStatus.BAD_REQUEST, f"Unknown sample ID: {sample_id}")
+                self._send_json_error(
+                    HTTPStatus.BAD_REQUEST, f"Unknown sample ID: {sample_id}"
+                )
                 return
         elif raw_har:
             try:
@@ -187,7 +190,8 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
                 return
         else:
             self._send_json_error(
-                HTTPStatus.BAD_REQUEST, "Either 'sample_id' or 'har_content' is required."
+                HTTPStatus.BAD_REQUEST,
+                "Either 'sample_id' or 'har_content' is required.",
             )
             return
 
@@ -247,12 +251,17 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
             # Stage 5: Auth
             t0 = time.time()
             auth_spec = detect_auth_spec(redact_result.entries)
+            primary_env = (
+                auth_spec.credentials[0].env_var_name
+                if auth_spec.credentials
+                else "HAR2MCP_AUTH_TOKEN"
+            )
             steps.append(
                 {
                     "stage": "5. Auth Provenance Detector",
                     "status": "success",
                     "duration_ms": round((time.time() - t0) * 1000, 1),
-                    "summary": f"Detected auth: '{auth_spec.primary_type.value}', injected via '{auth_spec.primary_env_var}'.",
+                    "summary": f"Detected auth: '{auth_spec.primary_type.value}', injected via '{primary_env}'.",
                 }
             )
 
@@ -263,14 +272,20 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
                 or os.environ.get("GOOGLE_API_KEY")
                 or os.environ.get("OPENAI_API_KEY")
             )
-            designer_type = "Gemini 2.5 Flash" if os.environ.get("GEMINI_API_KEY") else "Deterministic"
+            designer_type = (
+                "Gemini 2.5 Flash"
+                if os.environ.get("GEMINI_API_KEY")
+                else "Deterministic"
+            )
             if use_llm and has_api_key:
                 try:
                     llm = get_default_llm_client()
                     designer = ToolDesigner(llm_client=llm)
                     design_spec = designer.design(clusters, schemas)
                 except Exception as llm_err:
-                    logger.warning("LLM design failed, falling back to deterministic: %s", llm_err)
+                    logger.warning(
+                        "LLM design failed, falling back to deterministic: %s", llm_err
+                    )
                     design_spec = deterministic_design_tools(clusters, schemas)
                     designer_type = "Deterministic (Fallback)"
             else:
@@ -335,17 +350,18 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
             # Format tool list for UI
             formatted_tools = []
             for t in design_spec.tools:
+                first_ep = t.endpoints[0] if t.endpoints else None
                 formatted_tools.append(
                     {
                         "name": t.name,
                         "description": t.description,
                         "is_write": t.is_write,
-                        "method": t.method,
-                        "path_template": t.path_template,
+                        "method": first_ep.method if first_ep else "GET",
+                        "path_template": first_ep.path_template if first_ep else "/",
                         "parameters": [
                             {
                                 "name": p.name,
-                                "type": p.type_annotation,
+                                "type": p.type,
                                 "description": p.description,
                                 "required": p.required,
                                 "default": p.default,
@@ -375,7 +391,7 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
                 "total_time_seconds": total_elapsed,
                 "server_name": design_spec.server_name or "mcp_api_server",
                 "auth_type": auth_spec.primary_type.value,
-                "auth_env_var": auth_spec.primary_env_var,
+                "auth_env_var": primary_env,
                 "secrets_redacted": n_secrets,
                 "steps": steps,
                 "tools": formatted_tools,
@@ -404,14 +420,18 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
                     pass
 
 
-def run_server(host: str = "127.0.0.1", port: int = 8080, open_browser: bool = True) -> None:
+def run_server(
+    host: str = "127.0.0.1", port: int = 8080, open_browser: bool = True
+) -> None:
     """Launch the HAR2MCP studio web server."""
     server_address = (host, port)
     httpd = ThreadingHTTPServer(server_address, StudioRequestHandler)
     url = f"http://{host}:{port}"
     print(f"\n=======================================================")
     print(f"  ✨ HAR2MCP Studio running at: {url}")
-    print(f"  🤖 LLM Engine: {'Gemini 2.5 Flash' if os.environ.get('GEMINI_API_KEY') else 'Deterministic'}")
+    print(
+        f"  🤖 LLM Engine: {'Gemini 2.5 Flash' if os.environ.get('GEMINI_API_KEY') else 'Deterministic'}"
+    )
     print(f"  Press Ctrl+C to stop the server.")
     print(f"=======================================================\n")
 
